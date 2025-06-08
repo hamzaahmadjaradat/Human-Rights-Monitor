@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.routers import cases
+from app.routes.caseRoutes import router as case_router
 
-app = FastAPI()
-app.include_router(cases.router)
+app = FastAPI(title="Human Rights MIS")
+
+app.include_router(case_router)
