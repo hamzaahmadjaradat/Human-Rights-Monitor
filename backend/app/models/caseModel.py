@@ -33,3 +33,9 @@ class CaseCreate(BaseModel):
     perpetrators: List[Perpetrator]
     evidence: List[Evidence]
     created_by: str
+
+class CaseStatusUpdate(BaseModel):
+    new_status: str
+    changed_by: str 
+    reason: Optional[str] = None 
+    notes: Optional[str] = None 
