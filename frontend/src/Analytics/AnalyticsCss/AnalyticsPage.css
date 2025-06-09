@@ -1,0 +1,80 @@
+.analytics-wrapper {
+  display: flex;
+  height: 100vh;
+}
+
+.analytics-sidebar {
+  width: 220px;
+  background-color: #364116;
+  color: #fff;
+  padding: 24px;
+}
+
+.analytics-sidebar h3 {
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+}
+
+.analytics-sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.analytics-sidebar li {
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: #4b5c1d;
+  transition: background-color 0.2s ease;
+}
+
+.analytics-sidebar li:hover {
+  background-color: #5e7223;
+}
+
+.analytics-main {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #e9f5f0;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.analytics-title {
+  font-size: 2.4rem;
+  color: #364116;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.chart-section {
+  background-color: #f4ede0;
+  border: 2px solid #364116;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 1000px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.chart-title {
+  font-size: 1.5rem;
+  color: #364116;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.analytics-loading {
+  color: #364116;
+  font-size: 1.2rem;
+  margin-top: 50px;
+}
+
+.chart-section .js-plotly-plot {
+  width: 100% !important;
+  height: auto !important;
+}

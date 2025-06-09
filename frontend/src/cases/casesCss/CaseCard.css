@@ -1,0 +1,92 @@
+.case-card {
+  width: 100%;
+  max-width: 800px;
+  background-color: #fdfcf7;              /* Softer neutral background */
+  border: 2px solid #5e723d;               /* Olive green border */
+  border-radius: 12px;
+  padding: 20px 28px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: box-shadow 0.3s ease;
+  position: relative;
+}
+
+.case-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.case-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.case-title {
+  font-size: 1.4rem;
+  color: #364116;              /* Deep olive text */
+  font-weight: 700;
+}
+
+.case-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  color: #555;
+  font-size: 1rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* View Button */
+.view-button {
+  background-color: #556b2f;      /* Dark olive */
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.view-button:hover {
+  background-color: #3e4f1f;
+}
+
+/* Status Button */
+.status-button {
+  background-color: #e07a3f;      /* Muted orange */
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.status-button:hover {
+  background-color: #cc6633;
+}
+
+/* Delete Icon */
+.delete-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #dc3545;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.2s ease;
+}
+
+.delete-icon:hover {
+  color: #a71d2a;
+}

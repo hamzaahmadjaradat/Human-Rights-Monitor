@@ -1,0 +1,24 @@
+.app-header {
+  background-color: #181e00;
+  color: #fff;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar .nav-links {
+  list-style: none;
+  display: flex;
+  gap: 20px;
+}
+
+.navbar .nav-links li a {
+  color: #f4ede0;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.navbar .nav-links li a:hover {
+  text-decoration: underline;
+}

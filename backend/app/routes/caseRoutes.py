@@ -1,14 +1,14 @@
 from fastapi import APIRouter
-from app.models.caseModel import CaseCreate
-from app.models.caseModel import CaseStatusUpdate
+from typing import Optional
+
+from app.models.caseModel import CaseCreate, CaseStatusUpdate
 from app.controllers.caseController import (
     create_case_controller,
     get_case_by_id_controller,
     update_case_status_controller,
-    list_cases_controller ,
+    list_cases_controller,
     archive_case_controller
 )
-from typing import  Optional
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
@@ -36,8 +36,6 @@ def list_cases(
 ):
     return list_cases_controller(region, violation, status, date_from, date_to, page, limit)
 
-
 @router.delete("/{case_id}")
 def archive_case(case_id: str):
     return archive_case_controller(case_id)
-

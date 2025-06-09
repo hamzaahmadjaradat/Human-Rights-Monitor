@@ -1,16 +1,15 @@
-from app.models.caseModel import CaseCreate
-from app.database import cases_collection
 from datetime import datetime
-from fastapi import HTTPException
 from bson import ObjectId
+from fastapi import HTTPException
 from app.database import cases_collection, case_status_history_collection
-from app.models.caseModel import CaseStatusUpdate
+from app.models.caseModel import CaseCreate, CaseStatusUpdate
+
 
 async def create_case_controller(case: CaseCreate):
     case_dict = case.dict()
     case_dict["created_at"] = datetime.utcnow()
     case_dict["updated_at"] = datetime.utcnow()
-    case_dict["archived"] = False 
+    case_dict["archived"] = False
     result = cases_collection.insert_one(case_dict)
     return {"message": "Case created", "case_id": str(result.inserted_id)}
 
@@ -18,18 +17,19 @@ async def create_case_controller(case: CaseCreate):
 def get_case_by_id_controller(case_id: str):
     if not ObjectId.is_valid(case_id):
         raise HTTPException(status_code=400, detail="Invalid case ID")
+
     case = cases_collection.find_one({"_id": ObjectId(case_id)})
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+
     case["_id"] = str(case["_id"])
     return case
-
 
 
 def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
     if not ObjectId.is_valid(case_id):
         raise HTTPException(status_code=400, detail="Invalid case ID")
-    
+
     case = cases_collection.find_one({"_id": ObjectId(case_id)})
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -50,7 +50,7 @@ def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
         }
     )
 
-    history_record = {
+    case_status_history_collection.insert_one({
         "case_id": case_id,
         "old_status": old_status,
         "new_status": new_status,
@@ -58,20 +58,20 @@ def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
         "notes": update_data.notes,
         "changed_by": update_data.changed_by,
         "changed_at": datetime.utcnow()
-    }
-
-    case_status_history_collection.insert_one(history_record)
+    })
 
     return {
         "message": "Case status updated",
         "old_status": old_status,
         "new_status": new_status
     }
-
-
-
 def list_cases_controller(region, violation, status, date_from, date_to, page, limit):
-    query = {}
+    query = {
+        "$or": [
+            {"archived": False},
+            {"archived": {"$exists": False}}  # Include documents without 'archived' field
+        ]
+    }
 
     if region:
         query["location.region"] = region
@@ -82,17 +82,17 @@ def list_cases_controller(region, violation, status, date_from, date_to, page, l
     if status:
         query["status"] = status
 
-    if date_from or date_to:
-        query["date_occurred"] = {}
-        if date_from:
-            query["date_occurred"]["$gte"] = datetime.fromisoformat(date_from)
-        if date_to:
-            query["date_occurred"]["$lte"] = datetime.fromisoformat(date_to)
+    date_filter = {}
+    if date_from:
+        date_filter["$gte"] = datetime.fromisoformat(date_from)
+    if date_to:
+        date_filter["$lte"] = datetime.fromisoformat(date_to)
+    if date_filter:
+        query["date_occurred"] = date_filter
 
     skip = (page - 1) * limit
 
     total = cases_collection.count_documents(query)
-    query["archived"] = False 
     cases = list(
         cases_collection.find(query)
         .sort("date_occurred", -1)
@@ -114,10 +114,11 @@ def list_cases_controller(region, violation, status, date_from, date_to, page, l
         "results": cases
     }
 
+
 def archive_case_controller(case_id: str):
     if not ObjectId.is_valid(case_id):
         raise HTTPException(status_code=400, detail="Invalid case ID")
-    
+
     result = cases_collection.update_one(
         {"_id": ObjectId(case_id)},
         {
