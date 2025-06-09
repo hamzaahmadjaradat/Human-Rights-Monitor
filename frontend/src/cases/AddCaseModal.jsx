@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Form, Row, Col } from "react-bootstrap";
+import { Modal, Button, Form, Image } from "react-bootstrap";
 import axios from "axios";
 import { CheckCircleFill } from "react-bootstrap-icons";
 
@@ -8,7 +8,7 @@ export default function AddCaseModal({ show, onHide, onAdded }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [violationTypes, setViolationTypes] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("new");
   const [priority, setPriority] = useState("");
   const [country, setCountry] = useState("");
   const [region, setRegion] = useState("");
@@ -20,13 +20,26 @@ export default function AddCaseModal({ show, onHide, onAdded }) {
 
   const [perpetratorName, setPerpetratorName] = useState("");
   const [perpetratorType, setPerpetratorType] = useState("");
-  const [evidenceType, setEvidenceType] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
   const [evidenceDescription, setEvidenceDescription] = useState("");
   const [evidenceDate, setEvidenceDate] = useState("");
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [filePreviews, setFilePreviews] = useState([]);
+  const violationTypeOptions = [
+  "arbitrary_detention",
+  "forced_displacement",
+  "torture",
+  "property_destruction",
+  "extrajudicial_killing",
+  "enforced_disappearance",
+  "sexual_violence",
+  "freedom_of_expression_violation"
+];
+
 
   const [allVictims, setAllVictims] = useState([]);
   const [selectedVictims, setSelectedVictims] = useState([]);
+
+  const statusOptions = ["new", "in_progress", "resolved", "archived"];
 
   useEffect(() => {
     if (show) {
@@ -49,39 +62,81 @@ export default function AddCaseModal({ show, onHide, onAdded }) {
     }
   };
 
+ const handleFileChange = (e) => {
+  const newFiles = Array.from(e.target.files);
+
+  const uniqueFiles = [...evidenceFiles];
+  const uniquePreviews = [...filePreviews];
+
+  newFiles.forEach(file => {
+    if (!uniqueFiles.find(f => f.name === file.name && f.size === file.size)) {
+      uniqueFiles.push(file);
+      uniquePreviews.push(URL.createObjectURL(file));
+    }
+  });
+
+  setEvidenceFiles(uniqueFiles);
+  setFilePreviews(uniquePreviews);
+};
+
+
+  const handleRemoveImage = (index) => {
+    const newFiles = [...evidenceFiles];
+    const newPreviews = [...filePreviews];
+    newFiles.splice(index, 1);
+    newPreviews.splice(index, 1);
+    setEvidenceFiles(newFiles);
+    setFilePreviews(newPreviews);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const perpetrators = [{ name: perpetratorName, type: perpetratorType }];
-      const evidence = [{
-        type: evidenceType,
-        url: evidenceUrl,
-        description: evidenceDescription,
-        date_captured: evidenceDate,
-      }];
 
-      await axios.post("http://localhost:8000/cases/", {
-        case_id: caseId,
-        title,
-        description,
-        violation_types: violationTypes.split(",").map((s) => s.trim()),
-        status,
-        priority,
-        location: {
-          country,
-          region,
-          coordinates: {
-            type: "Point",
-            coordinates: [parseFloat(longitude), parseFloat(latitude)],
-          },
-        },
-        date_occurred: dateOccurred,
-        date_reported: dateReported,
-        victims: selectedVictims.map((v) => v._id),
-        perpetrators,
-        evidence,
-        created_by: createdBy,
+    const perpetrators =
+      perpetratorName && perpetratorType
+        ? [{ name: perpetratorName, type: perpetratorType }]
+        : [];
+
+    const formData = new FormData();
+    formData.append("case_id", caseId);
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("status", status);
+    formData.append("priority", priority);
+    formData.append("created_by", createdBy);
+    formData.append("date_occurred", dateOccurred);
+    formData.append("date_reported", dateReported);
+
+    formData.append("location", JSON.stringify({
+      country,
+      region,
+      coordinates: {
+        type: "Point",
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+      }
+    }));
+
+    formData.append("violation_types", JSON.stringify(
+      violationTypes.split(",").map((s) => s.trim())
+    ));
+
+    formData.append("victims", JSON.stringify(
+      selectedVictims.map((v) => v._id)
+    ));
+
+    formData.append("perpetrators", JSON.stringify(perpetrators));
+    formData.append("evidence_description", evidenceDescription);
+    formData.append("evidence_date", evidenceDate);
+
+    for (let i = 0; i < evidenceFiles.length; i++) {
+      formData.append("evidence_files", evidenceFiles[i]);
+    }
+
+    try {
+      await axios.post("http://localhost:8000/cases/", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
+
       onAdded();
       onHide();
     } catch (error) {
@@ -96,10 +151,38 @@ export default function AddCaseModal({ show, onHide, onAdded }) {
       </Modal.Header>
       <Modal.Body>
         <Form onSubmit={handleSubmit}>
+          <Form.Group><Form.Label>Case ID</Form.Label><Form.Control value={caseId} onChange={(e) => setCaseId(e.target.value)} required /></Form.Group>
           <Form.Group><Form.Label>Title</Form.Label><Form.Control value={title} onChange={(e) => setTitle(e.target.value)} required /></Form.Group>
           <Form.Group><Form.Label>Description</Form.Label><Form.Control value={description} onChange={(e) => setDescription(e.target.value)} required /></Form.Group>
-          <Form.Group><Form.Label>Violation Types (comma separated)</Form.Label><Form.Control value={violationTypes} onChange={(e) => setViolationTypes(e.target.value)} required /></Form.Group>
-          <Form.Group><Form.Label>Status</Form.Label><Form.Control value={status} onChange={(e) => setStatus(e.target.value)} required /></Form.Group>
+          <Form.Group><Form.Label> </Form.Label><Form.Group className="mb-3">
+  <Form.Label>Violation Types</Form.Label>
+  <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '10px', backgroundColor: '#f9f9f9' }}>
+    {violationTypeOptions.map((type) => (
+      <Form.Check
+        key={type}
+        type="checkbox"
+        id={`violation-${type}`}
+        label={type.replace(/_/g, " ")}
+        checked={violationTypes.includes(type)}
+        onChange={(e) => {
+          if (e.target.checked) {
+            setViolationTypes([...violationTypes, type]);
+          } else {
+            setViolationTypes(violationTypes.filter((v) => v !== type));
+          }
+        }}
+      />
+    ))}
+  </div>
+</Form.Group>
+</Form.Group>
+
+          <Form.Group><Form.Label>Status</Form.Label>
+            <Form.Select value={status} onChange={(e) => setStatus(e.target.value)} required>
+              {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </Form.Select>
+          </Form.Group>
+
           <Form.Group><Form.Label>Priority</Form.Label><Form.Control value={priority} onChange={(e) => setPriority(e.target.value)} /></Form.Group>
           <Form.Group><Form.Label>Country</Form.Label><Form.Control value={country} onChange={(e) => setCountry(e.target.value)} required /></Form.Group>
           <Form.Group><Form.Label>Region</Form.Label><Form.Control value={region} onChange={(e) => setRegion(e.target.value)} required /></Form.Group>
@@ -108,35 +191,44 @@ export default function AddCaseModal({ show, onHide, onAdded }) {
           <Form.Group><Form.Label>Date Occurred</Form.Label><Form.Control type="datetime-local" value={dateOccurred} onChange={(e) => setDateOccurred(e.target.value)} required /></Form.Group>
           <Form.Group><Form.Label>Date Reported</Form.Label><Form.Control type="datetime-local" value={dateReported} onChange={(e) => setDateReported(e.target.value)} required /></Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Victims (click to select)</Form.Label>
-            <div style={{ border: "1px solid #7F8A5A", borderRadius: "10px", padding: "10px", height: "180px", overflowY: "auto", backgroundColor: "#f9f9f9", display: "flex", flexDirection: "column", gap: "6px" }}>
-              {allVictims.length === 0 ? <div>No victims available</div> : allVictims.map((victim) => {
-                const isSelected = selectedVictims.some((v) => v._id === victim._id);
-                return (
-                  <div key={victim._id} onClick={() => toggleVictim(victim)} style={{ cursor: "pointer", padding: "8px 12px", borderRadius: "8px", backgroundColor: isSelected ? "#d1e7dd" : "white", border: isSelected ? "2px solid #0f5132" : "1px solid #ccc", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div>
-                      {victim.anonymous && <strong style={{ color: "#a00" }}>[Anonymous] </strong>}
-                      <strong>{victim.demographics?.gender || "Unknown"}</strong> | Age: {victim.demographics?.age || "-"} | {victim.demographics?.ethnicity || "-"}<br />
-                      Occupation: {victim.demographics?.occupation || "-"}
-                    </div>
-                    {isSelected && <CheckCircleFill color="#198754" size={20} />}
-                  </div>
-                );
-              })}
-            </div>
-          </Form.Group>
-
-          <h5>Perpetrator Info</h5>
-          <Form.Group><Form.Label>Name</Form.Label><Form.Control value={perpetratorName} onChange={(e) => setPerpetratorName(e.target.value)} /></Form.Group>
-          <Form.Group><Form.Label>Type</Form.Label><Form.Control value={perpetratorType} onChange={(e) => setPerpetratorType(e.target.value)} /></Form.Group>
-
-          <h5 className="mt-3">Evidence Info</h5>
-          <Form.Group><Form.Label>Type</Form.Label><Form.Control value={evidenceType} onChange={(e) => setEvidenceType(e.target.value)} /></Form.Group>
-          <Form.Group><Form.Label>URL</Form.Label><Form.Control value={evidenceUrl} onChange={(e) => setEvidenceUrl(e.target.value)} /></Form.Group>
+         
+          <h5 className="mt-3">Evidence Info (Optional)</h5>
           <Form.Group><Form.Label>Description</Form.Label><Form.Control value={evidenceDescription} onChange={(e) => setEvidenceDescription(e.target.value)} /></Form.Group>
           <Form.Group><Form.Label>Date Captured</Form.Label><Form.Control type="date" value={evidenceDate} onChange={(e) => setEvidenceDate(e.target.value)} /></Form.Group>
 
+          <Form.Group controlId="evidenceFiles" className="mb-3">
+            <Form.Label>Upload Files</Form.Label>
+            <div style={{
+              border: '1px solid #a6b17f',
+              borderRadius: '8px',
+              padding: '15px',
+              backgroundColor: '#fdfdfd'
+            }}>
+              {filePreviews.length > 0 && (
+                <div className="mb-3 d-flex flex-wrap gap-2">
+                  {filePreviews.map((img, index) => (
+                    <div key={index} className="position-relative">
+                      <Image
+                        src={img}
+                        fluid
+                        rounded
+                        style={{ height: '120px', width: '120px', objectFit: 'cover' }}
+                      />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        style={{ position: 'absolute', top: '5px', right: '5px' }}
+                        onClick={() => handleRemoveImage(index)}
+                      >
+                        X
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Form.Control type="file" multiple onChange={handleFileChange} accept="image/*,application/pdf,video/*" />
+            </div>
+          </Form.Group>
 
           <Button type="submit" className="mt-3" variant="primary">Add Case</Button>
         </Form>

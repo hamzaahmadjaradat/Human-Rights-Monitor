@@ -2,17 +2,63 @@ from datetime import datetime
 from bson import ObjectId
 from fastapi import HTTPException
 from app.database import cases_collection, case_status_history_collection
-from app.models.caseModel import CaseCreate, CaseStatusUpdate
+from app.models.caseModel import  CaseStatusUpdate,CaseCreate
+import os
+import shutil
+import json
+from fastapi.responses import JSONResponse
 
 
-async def create_case_controller(case: CaseCreate):
-    case_dict = case.dict()
-    case_dict["created_at"] = datetime.utcnow()
-    case_dict["updated_at"] = datetime.utcnow()
-    case_dict["archived"] = False
-    result = cases_collection.insert_one(case_dict)
+async def create_case_controller(
+    title, description, violation_types, status, priority,
+    location, date_occurred, date_reported,
+    victims, perpetrators, created_by,
+    evidence_description, evidence_date, case_id, evidence_files
+):
+    if not case_id:
+        case_id = f"HRM-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+
+    upload_dir = f"files/{case_id}"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    evidence_data = []
+    if evidence_files:
+        for file in evidence_files:
+            file_path = os.path.join(upload_dir, file.filename)
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            evidence_data.append({
+                "type": file.content_type.split("/")[0],
+                "url": f"/{file_path}",
+                "description": evidence_description,
+                "date_captured": evidence_date
+            })
+
+    try:
+        case_doc = {
+            "case_id": case_id,
+            "title": title,
+            "description": description,
+            "violation_types": json.loads(violation_types),
+            "status": status,
+            "priority": priority,
+            "location": json.loads(location),
+            "date_occurred": date_occurred,
+            "date_reported": date_reported,
+            "victims": [ObjectId(v) for v in json.loads(victims)] if victims else [],
+            "perpetrators": json.loads(perpetrators) if perpetrators else [],
+            "evidence": evidence_data,
+            "created_by": ObjectId(created_by),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "archived": False
+        }
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"error": f"Invalid input: {str(e)}"})
+
+    result = cases_collection.insert_one(case_doc)
     return {"message": "Case created", "case_id": str(result.inserted_id)}
-
 
 def get_case_by_id_controller(case_id: str):
     if not ObjectId.is_valid(case_id):
@@ -22,8 +68,8 @@ def get_case_by_id_controller(case_id: str):
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
-    case["_id"] = str(case["_id"])
-    return case
+    return serialize_case(case)
+
 
 
 def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
@@ -65,11 +111,53 @@ def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
         "old_status": old_status,
         "new_status": new_status
     }
+
+
+
+
+
+def serialize_case(case):
+    case["_id"] = str(case["_id"])
+
+    if "date_occurred" in case and isinstance(case["date_occurred"], datetime):
+        case["date_occurred"] = case["date_occurred"].isoformat()
+
+    if "date_reported" in case and isinstance(case["date_reported"], datetime):
+        case["date_reported"] = case["date_reported"].isoformat()
+
+    if "created_at" in case and isinstance(case["created_at"], datetime):
+        case["created_at"] = case["created_at"].isoformat()
+
+    if "updated_at" in case and isinstance(case["updated_at"], datetime):
+        case["updated_at"] = case["updated_at"].isoformat()
+
+    if "created_by" in case and isinstance(case["created_by"], ObjectId):
+        case["created_by"] = str(case["created_by"])
+
+    if "victims" in case and isinstance(case["victims"], list):
+        case["victims"] = [str(v) for v in case["victims"]]
+
+    if "perpetrators" in case and isinstance(case["perpetrators"], list):
+        for p in case["perpetrators"]:
+            if isinstance(p, dict):
+                for k, v in p.items():
+                    if isinstance(v, ObjectId):
+                        p[k] = str(v)
+
+    if "evidence" in case and isinstance(case["evidence"], list):
+        for e in case["evidence"]:
+            if "date_captured" in e and isinstance(e["date_captured"], datetime):
+                e["date_captured"] = e["date_captured"].isoformat()
+
+    return case
+
+    
+
 def list_cases_controller(region, violation, status, date_from, date_to, page, limit):
     query = {
         "$or": [
             {"archived": False},
-            {"archived": {"$exists": False}}  # Include documents without 'archived' field
+            {"archived": {"$exists": False}}
         ]
     }
 
@@ -100,18 +188,13 @@ def list_cases_controller(region, violation, status, date_from, date_to, page, l
         .limit(limit)
     )
 
-    for case in cases:
-        case["_id"] = str(case["_id"])
-        case["date_occurred"] = case["date_occurred"].isoformat()
-        case["date_reported"] = case.get("date_reported", "").isoformat() if case.get("date_reported") else None
-        case["created_at"] = case["created_at"].isoformat()
-        case["updated_at"] = case["updated_at"].isoformat()
+    results = [serialize_case(c) for c in cases]
 
     return {
         "total": total,
         "page": page,
         "limit": limit,
-        "results": cases
+        "results": results
     }
 
 
