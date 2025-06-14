@@ -12,6 +12,7 @@ const Header = () => {
       <nav className="navbar">
         <ul className="nav-links">
           <li><Link to="/">Dashboard</Link></li>
+          <li><Link to="/reports">Reports</Link></li> 
           <li><Link to="/cases">Cases</Link></li>
           <li><Link to="/analytics">Analytics</Link></li>
         </ul>

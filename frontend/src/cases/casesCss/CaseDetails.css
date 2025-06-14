@@ -16,6 +16,20 @@
   text-align: center;
 }
 
+.back-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  text-decoration: none;
+  color: #2a3600;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: #556b2f;
+  text-decoration: underline;
+}
+
 
 .case-details h2 {
   font-size: 2rem;
@@ -35,4 +49,76 @@
 .case-details.error {
   color: red;
   text-align: center;
+}
+
+.evidence-section {
+  margin-top: 30px;
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.case-details-page {
+  padding: 40px;
+  background-color: #f9f5e9;
+  min-height: 100vh;
+  border-radius: 8px;
+  margin: 20px auto;
+  max-width: 1000px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+}
+
+.evidence-item img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+
+
+.section-title {
+  margin-top: 40px;
+  font-size: 1.6rem;
+  color: #3c4b10;
+  text-align: center;
+}
+
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.card {
+  background-color: #ffffff;
+  padding: 16px 20px;
+  border-radius: 10px;
+  width: 260px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  color: #2a3600;
+  font-size: 1rem;
+  line-height: 1.5;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: scale(1.02);
+}
+
+.card p {
+  margin: 6px 0;
+}
+
+.card strong {
+  font-weight: 600;
+  color: #181e00;
 }

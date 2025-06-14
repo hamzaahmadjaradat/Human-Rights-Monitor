@@ -60,7 +60,6 @@ def generate_pdf_report():
     return "analytics_report.pdf"
 
 def generate_excel_report():
-    # Sample data for demo
     data = {
         "Violation Type": ["torture", "arbitrary_detention"],
         "Count": [5, 7]

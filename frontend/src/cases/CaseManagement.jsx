@@ -5,7 +5,7 @@ import CaseDetailsModal from "../components/CaseDetailsModal";
 import CaseFormModal from "../components/CaseFormModal";
 import StatusUpdateModal from "../components/StatusUpdateModal";
 import { fetchCases } from "../api/cases";
-import './CaseManagement.css';
+import './casesCss/CaseManagement.css';
 
 
 export default function CaseManagement() {

@@ -2,7 +2,7 @@ from datetime import datetime
 from bson import ObjectId
 from fastapi import HTTPException
 from app.database import cases_collection, case_status_history_collection
-from app.models.caseModel import  CaseStatusUpdate,CaseCreate
+from app.models.caseModel import CaseStatusUpdate, CaseCreate
 import os
 import shutil
 import json
@@ -60,6 +60,7 @@ async def create_case_controller(
     result = cases_collection.insert_one(case_doc)
     return {"message": "Case created", "case_id": str(result.inserted_id)}
 
+
 def get_case_by_id_controller(case_id: str):
     if not ObjectId.is_valid(case_id):
         raise HTTPException(status_code=400, detail="Invalid case ID")
@@ -69,7 +70,6 @@ def get_case_by_id_controller(case_id: str):
         raise HTTPException(status_code=404, detail="Case not found")
 
     return serialize_case(case)
-
 
 
 def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
@@ -113,9 +113,6 @@ def update_case_status_controller(case_id: str, update_data: CaseStatusUpdate):
     }
 
 
-
-
-
 def serialize_case(case):
     case["_id"] = str(case["_id"])
 
@@ -151,9 +148,31 @@ def serialize_case(case):
 
     return case
 
-    
 
-def list_cases_controller(region, violation, status, date_from, date_to, page, limit):
+
+def archive_case_controller(case_id: str):
+    if not ObjectId.is_valid(case_id):
+        raise HTTPException(status_code=400, detail="Invalid case ID")
+
+    result = cases_collection.update_one(
+        {"_id": ObjectId(case_id)},
+        {
+            "$set": {
+                "archived": True,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    return {"message": "Case archived successfully"}
+
+
+
+
+def list_cases_controller(region, violation, status, date_from, date_to, page, limit, title=None):
     query = {
         "$or": [
             {"archived": False},
@@ -164,17 +183,28 @@ def list_cases_controller(region, violation, status, date_from, date_to, page, l
     if region:
         query["location.region"] = region
 
-    if violation:
-        query["violation_types"] = violation
-
     if status:
         query["status"] = status
 
+    if title:
+        query["title"] = {
+            "$regex": f".*{title}.*",
+            "$options": "i"  # Case-insensitive partial match
+        }
+
+    if violation:
+        violations_list = violation.split(",")
+        query["violation_types"] = {"$in": violations_list}
+
     date_filter = {}
-    if date_from:
-        date_filter["$gte"] = datetime.fromisoformat(date_from)
-    if date_to:
-        date_filter["$lte"] = datetime.fromisoformat(date_to)
+    try:
+        if date_from:
+            date_filter["$gte"] = datetime.fromisoformat(date_from)
+        if date_to:
+            date_filter["$lte"] = datetime.fromisoformat(date_to)
+    except:
+        pass
+
     if date_filter:
         query["date_occurred"] = date_filter
 
@@ -197,22 +227,9 @@ def list_cases_controller(region, violation, status, date_from, date_to, page, l
         "results": results
     }
 
-
-def archive_case_controller(case_id: str):
-    if not ObjectId.is_valid(case_id):
-        raise HTTPException(status_code=400, detail="Invalid case ID")
-
-    result = cases_collection.update_one(
-        {"_id": ObjectId(case_id)},
-        {
-            "$set": {
-                "archived": True,
-                "updated_at": datetime.utcnow()
-            }
-        }
-    )
-
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Case not found")
-
-    return {"message": "Case archived successfully"}
+def get_all_regions_controller():
+    try:
+        regions = cases_collection.distinct("location.region", {"archived": {"$ne": True}})
+        return sorted([r for r in regions if r])
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error fetching regions: {str(e)}")

@@ -10,7 +10,7 @@ export default function UpdateCaseStatusModal({ show, onHide, caseId, onUpdated 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const statusOptions = ["new", "in_progress", "resolved", "archived"];
+  const statusOptions = ["new", "under_investigation", "resolved", "archived"];
 
   useEffect(() => {
     if (show && caseId) {

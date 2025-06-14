@@ -13,7 +13,7 @@ const CaseCard = ({ caseItem, onDelete }) => {
   };
 
   const handleDeleteClick = () => {
-    if (window.confirm('Are you sure you want to delete this case?')) {
+    if (window.confirm('Are you sure you want to archive this case?')) {
       onDelete(caseItem._id);
     }
   };

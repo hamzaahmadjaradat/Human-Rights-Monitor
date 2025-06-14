@@ -1,0 +1,18 @@
+
+.dashboard-container {
+  padding: 2rem;
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-container h1 {
+  font-size: 2rem;
+  color: #34495e;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-container p {
+  font-size: 1.1rem;
+  color: #555;
+  margin-top: 0;
+}

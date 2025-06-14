@@ -5,7 +5,8 @@ from app.controllers.caseController import (
     get_case_by_id_controller,
     update_case_status_controller,
     list_cases_controller,
-    archive_case_controller
+    archive_case_controller,
+    get_all_regions_controller
 )
 from app.models.caseModel import  CaseStatusUpdate
 
@@ -39,6 +40,13 @@ async def create_case(
     )
 
 
+
+@router.get("/regions")
+def get_regions():
+    return get_all_regions_controller()
+
+
+
 @router.get("/{case_id}")
 def get_case(case_id: str):
     return get_case_by_id_controller(case_id)
@@ -54,11 +62,15 @@ def list_cases(
     status: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    title: Optional[str] = None,
     page: int = 1,
     limit: int = 10
 ):
-    return list_cases_controller(region, violation, status, date_from, date_to, page, limit)
+    return list_cases_controller(region, violation, status, date_from, date_to, page, limit, title)
+
 
 @router.delete("/{case_id}")
 def archive_case(case_id: str):
     return archive_case_controller(case_id)
+
+

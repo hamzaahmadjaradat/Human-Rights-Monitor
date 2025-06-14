@@ -1,70 +1,144 @@
-# Getting Started with Create React App
+# Human Rights Monitor
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive web-based system for documenting, managing, and analyzing human rights violations. Built to support NGOs, journalists, and human rights defenders in conflict-affected regions, the system offers efficient case management, data visualization, and multilingual support for structured reporting.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🧩 Project Structure
 
-### `npm start`
+### 🔹 Backend – FastAPI (Python)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Organized under `backend/app/`:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+#### ➤ `controllers/`
+Handles core logic for each domain:
 
-### `npm test`
+- **`caseController.py`** – Add, retrieve, update status, and archive human rights cases.
+- **`analyticsController.py`** – Aggregate case statistics for charts.
+- **`IndividualController.py`** – Manage individuals (victims/perpetrators).
+- **`reportController.py`** – (To be implemented) Generate exports and reports.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### ➤ `routes/`
+Links HTTP endpoints to controller logic:
 
-### `npm run build`
+- **`caseRoutes.py`**
+- **`analyticsRoutes.py`**
+- **`IndividualRoutes.py`**
+- **`reportRoutes.py`**
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### ➤ `database.py`
+MongoDB connection and setup.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+#### ➤ `main.py`
+Main FastAPI app instance with router registration.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+### 🔹 Frontend – React (JSX)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Located under `frontend/src/`:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+#### ➤ `cases/`
+- `CasesDemonstration.jsx` – Case listing with filter UI.
+- `AddCaseModal.jsx` – Modal for case creation.
+- `caseCard.jsx` – Compact card component for case preview.
+- `CaseDetails.jsx` – Full detail view for a selected case.
+- `CaseManagement.jsx` – Admin panel for managing cases.
+- `caseStatusUpdate.jsx` – Component to handle updating status.
+- `UpdateCaseStatusModal.jsx` – Modal for status change.
+- `casesCss/` – Styles for the above components.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+#### ➤ `Analytics/`
+- `AnalyticsPage.jsx` – Visualization dashboard (bar chart, pie chart, etc).
+- `AnalyticsCss/` – Dedicated styles for analytics components.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## ✅ Features Implemented So Far
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 📝 Case Management
+- Add new cases with:
+  - Title, Description, Location (region, coordinates)
+  - Violation types (multi-select)
+  - Evidence uploads
+  - Victim/perpetrator linking
+  - Start and end dates
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Status Management:
+  - Update status (new → under_investigation → resolved)
+  - Reason logging & timestamped history
+  - Archive functionality
 
-### Code Splitting
+### 🔍 Filtering & Display
+- Filters: title, region (West Bank cities), date range, violation type
+- Pagination of results
+- Responsive design with clean UI for readability
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 📈 Analytics (In Progress)
+- Fetch stats per type/region/time via backend API
+- Display insights in bar and pie charts
 
-### Analyzing the Bundle Size
+### 🌍 Arabic Content
+- All cases and descriptions are written in **Arabic**
+- Realistic and localized incident data
+- Ready for multilingual UI support
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+---
 
-### Making a Progressive Web App
+## 🗂️ Case Schema Example
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```json
+{
+  "case_id": "HRM-2023-0425",
+  "title": "تهجير قسري في محافظة الشمال",
+  "description": "تهجير جماعي للسكان بعد عمليات عسكرية مكثفة.",
+  "violation_types": ["forced_displacement", "property_destruction"],
+  "status": "under_investigation",
+  "priority": "high",
+  "location": {
+    "country": "فلسطين",
+    "region": "جنين",
+    "coordinates": { "type": "Point", "coordinates": [35.2, 32.5] }
+  },
+  "date_occurred": "2023-04-15T00:00:00Z",
+  "date_reported": "2023-04-20T00:00:00Z",
+  "victims": [
+    { "$oid": "507f1f77bcf86cd799439012" }
+  ],
+  "perpetrators": [
+    { "name": "اللواء 35", "type": "military_unit" }
+  ],
+  "evidence": [
+    {
+      "type": "photo",
+      "url": "/evidence/hr0425-1.jpg",
+      "description": "منازل مدمرة بعد القصف",
+      "date_captured": "2023-04-16T00:00:00Z"
+    }
+  ],
+  "created_by": { "$oid": "507f1f77bcf86cd799439021" },
+  "created_at": "2023-04-20T14:30:00Z",
+  "updated_at": "2023-04-25T09:15:00Z"
+}
 
-### Advanced Configuration
+🚀 How to Run the Project
+cd backend
+python3 -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-### Deployment
+🖼️ Frontend (React)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+cd frontend
+npm install
+npm start
 
-### `npm run build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+📸 UI Preview
+Case cards with status colors (e.g., "in_progress", "archived")
+
+Smart filters: Region, Title, Date (Start/End), Violation types
+
+Buttons: Add Case, Change Status (Modal), View Details

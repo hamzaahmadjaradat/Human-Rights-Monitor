@@ -1,73 +1,120 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+
 import axios from 'axios';
 import './casesCss/CaseDetails.css';
 
-const CaseDetails = () => {
+import { useParams, Link } from 'react-router-dom';
+
+function CaseDetails() {
   const { id } = useParams();
   const [caseData, setCaseData] = useState(null);
+  const [victimDetails, setVictimDetails] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchCase = async () => {
-      try {
-        const response = await axios.get(`http://localhost:8000/cases/${id}`);
-        setCaseData(response.data);
-      } catch (err) {
-        setError('❌ Failed to load case details.');
-      } finally {
-        setLoading(false);
+    fetchCaseDetails();
+  }, []);
+
+  const fetchVictimsInfo = async (victimIds) => {
+    const promises = victimIds.map((victimId) =>
+      axios.get(`http://localhost:8000/individuals/victims/${victimId}`).then(res => res.data).catch(() => null)
+    );
+    const results = await Promise.all(promises);
+    setVictimDetails(results.filter(Boolean));
+  };
+
+  const fetchCaseDetails = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8000/cases/${id}`);
+      setCaseData(response.data);
+      if (response.data.victims?.length > 0) {
+        await fetchVictimsInfo(response.data.victims);
       }
-    };
+    } catch (err) {
+      setError('Failed to load case details.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCase();
-  }, [id]);
-
-  if (loading) return <div className="case-details">Loading case details...</div>;
-  if (error) return <div className="case-details error">{error}</div>;
-  if (!caseData) return <div className="case-details">No case data found.</div>;
-
-  const {
-    title,
-    description,
-    violation_types,
-    status,
-    priority,
-    location,
-    date_occurred,
-    date_reported,
-    created_by,
-    created_at,
-    updated_at,
-    victims,
-    perpetrators,
-    evidence,
-  } = caseData;
+  if (loading) return <p className="case-loading">Loading...</p>;
+  if (error) return <p className="case-error">{error}</p>;
 
   return (
     <div className="case-details">
-      <h2>{title}</h2>
-      <p><strong>Description:</strong> {description}</p>
-      <p><strong>Status:</strong> {status}</p>
-      <p><strong>Priority:</strong> {priority}</p>
-      <p><strong>Violation Types:</strong> {violation_types.join(', ')}</p>
-      
-      <p><strong>Country:</strong> {location?.country || 'N/A'}</p>
-      <p><strong>Region:</strong> {location?.region || 'N/A'}</p>
-      <p><strong>Coordinates:</strong> {location?.coordinates?.coordinates?.join(', ') || 'N/A'}</p>
+    <Link to="/cases" className="back-link">← Back to Cases</Link>
+      <h2>{caseData.title}</h2>
 
-      <p><strong>Date Occurred:</strong> {new Date(date_occurred).toLocaleString()}</p>
-      <p><strong>Date Reported:</strong> {date_reported ? new Date(date_reported).toLocaleString() : 'Not reported'}</p>
-      <p><strong>Created By:</strong> {created_by}</p>
-      <p><strong>Created At:</strong> {new Date(created_at).toLocaleString()}</p>
-      <p><strong>Last Updated:</strong> {new Date(updated_at).toLocaleString()}</p>
+      <div className="case-info-block">
+        <p><strong>Description:</strong> {caseData.description}</p>
+        <p><strong>Status:</strong> {caseData.status}</p>
+        <p><strong>Priority:</strong> {caseData.priority || 'N/A'}</p>
+        <p><strong>Violation Types:</strong> {caseData.violation_types?.join(', ')}</p>
+        <p><strong>Country:</strong> {caseData.location?.country}</p>
+        <p><strong>Region:</strong> {caseData.location?.region}</p>
+        <p><strong>Coordinates:</strong> {caseData.location?.coordinates?.coordinates?.join(', ')}</p>
+        <p><strong>Date Occurred:</strong> {new Date(caseData.date_occurred).toLocaleString()}</p>
+        <p><strong>Date Reported:</strong> {new Date(caseData.date_reported).toLocaleString()}</p>
+        <p><strong>Created At:</strong> {new Date(caseData.created_at).toLocaleString()}</p>
+        <p><strong>Last Updated:</strong> {new Date(caseData.updated_at).toLocaleString()}</p>
+      </div>
 
-      <p><strong>Victims:</strong> {victims.length > 0 ? victims.join(', ') : 'None'}</p>
-      <p><strong>Perpetrators:</strong> {perpetrators.length > 0 ? perpetrators.join(', ') : 'None'}</p>
-      <p><strong>Evidence:</strong> {evidence.length > 0 ? evidence.join(', ') : 'None'}</p>
+      <hr />
+      <h4 className="section-title">Victims</h4>
+{victimDetails.length > 0 ? (
+  <div className="card-grid">
+    {victimDetails.map((v, index) => (
+      <div className="card" key={index}>
+        <p><strong>Name:</strong> {v.demographics?.name || "Anonymous"}</p>
+        <p><strong>Gender:</strong> {v.demographics?.gender}</p>
+        <p><strong>Age:</strong> {v.demographics?.age}</p>
+        <p><strong>Occupation:</strong> {v.demographics?.occupation}</p>
+      </div>
+    ))}
+  </div>
+) : (
+  <p>No victim details available.</p>
+)}
+
+<h4 className="section-title">Perpetrators</h4>
+{caseData.perpetrators?.length > 0 ? (
+  <div className="card-grid">
+    {caseData.perpetrators.map((p, index) => (
+      <div className="card" key={index}>
+        <p><strong>Name:</strong> {p.name}</p>
+        <p><strong>Type:</strong> {p.type}</p>
+      </div>
+    ))}
+  </div>
+) : (
+  <p>No perpetrators available.</p>
+)}
+
+      <hr />
+      <h4>Evidence</h4>
+    {caseData.evidence?.length > 0 ? (
+      <div className="evidence-list">
+        {caseData.evidence.map((evi, index) => (
+          <div className="evidence-item" key={index}>
+            <p><strong>Type:</strong> {evi.type}</p>
+            <p><strong>Description:</strong> {evi.description}</p>
+            <p><strong>Date Captured:</strong> {new Date(evi.date_captured).toLocaleDateString()}</p>
+            {evi.url && (
+              <img
+                src={`http://localhost:8000${encodeURI(evi.url)}`}
+                alt={`evidence-${index}`}
+                className="evidence-image"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p>No evidence available.</p>
+    )}
     </div>
   );
-};
+}
 
 export default CaseDetails;
